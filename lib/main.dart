@@ -6,7 +6,7 @@ void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatelessWidget {// my app es basicamente la aplicacion
   const MyApp({super.key});
 
   @override
@@ -17,10 +17,11 @@ class MyApp extends StatelessWidget {
         title: 'Namer App',
         theme: ThemeData(
           useMaterial3: true, //como plantilla de ciertos botones
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigoAccent,
         ),
-        home: MyHomePage(),
       ),
+        home: MyHomePage(),
+    ),
     );
   }
 }
@@ -30,31 +31,150 @@ class MyAppState extends ChangeNotifier {
   void getNext() {
     current = WordPair.random();
     notifyListeners();
-  } 
-}
+  }
+
+  var favorites = <WordPair>[];
+  void toggleFavorite() {
+    if (favorites.contains(current)) {
+      favorites.remove(current);
+    } else {
+      favorites.add(current);
+    }
+    notifyListeners();
+  }
+} 
+// ...
 
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
     return Scaffold(
-      body: Column(
+      body: Row(
         children: [
-          Text('A random idea:'),
-          BigCard(pair: pair),// usamos pair para no usar todo appstate sino solo lo que neceita
-          ElevatedButton(
-            onPressed: () {
-              appState.getNext();
-            },
-            child: Text('Next'),
+          SafeArea(// es un widget mas hecho para celular, para bordes de celular no interrumpan.
+            child: NavigationRail(
+              extended: false,
+              destinations: [
+                NavigationRailDestination(// navigation rail tiene destinos que serian la home y los favoritos
+                  icon: Icon(Icons.home),
+                  label: Text('Home'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.favorite),
+                  label: Text('Favorites'),
+                ),
+              ],
+              selectedIndex: 0,
+              onDestinationSelected: (value) {
+                print('selected: $value');
+              },
+            ),
+          ),
+          Expanded(// expanded es oe deme todo el espacio posible
+            child: Container(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: GeneratorPage(),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+
+class GeneratorPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var pair = appState.current;
+
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          BigCard(pair: pair),
+          SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite();
+                },
+                icon: Icon(icon),
+                label: Text('Like'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  appState.getNext();
+                },
+                child: Text('Next'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ...
+
+/* //class MyHomePage extends StatelessWidget {// my home page es literalmente el inicio de la app
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var pair = appState.current;
+
+    IconData icon;
+    if(appState.favorites.contains(pair)){
+      icon = Icons.favorite;
+    } else{
+      icon = Icons.favorite_border;
+    }
+    
+
+    return Scaffold(
+      body: Center(
+        child: Column(// la columna no sabe como poner a los hijos
+          mainAxisAlignment: MainAxisAlignment.center,// main center es para centrar la columna
+          children: [
+            BigCard(pair: pair),// usamos pair para no usar todo appstate sino solo lo que neceita
+            SizedBox(height: 10),// sized box puro espaciador y pixeles independientes sirve en carchacha igual
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton.icon(
+                  onPressed:(){
+                    appState.toggleFavorite();
+                  },
+                  icon: Icon(icon),
+                  label: Text('like'),
+                ),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    appState.getNext();
+                  },
+                  child: Text('Next'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  } */
+
 
 class BigCard extends StatelessWidget {
   const BigCard({
@@ -66,10 +186,20 @@ class BigCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var theme= Theme.of(context);
+    var style = theme.textTheme.displayMedium!.copyWith(
+      color: theme.colorScheme.onPrimary,
+    );
+
     return Card(
+      color: theme.colorScheme.primary,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Text(pair.asLowerCase),
+        child: Text(
+          pair.asLowerCase,
+          semanticsLabel: pair.asPascalCase,// pascal case lo lee cualquier screen reader 
+          style: style,
+          ),// como oye por si acaso tienes que ir en style
       ),
     );
   }
